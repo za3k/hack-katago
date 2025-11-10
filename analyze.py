@@ -90,25 +90,26 @@ def ellipsize(s, max=200):
         return s[:max-3]+"..."
 
 class Katago(metaclass=Singleton):
-    def __init__(self):
-        pass
+    def __init__(self, calc=True):
+        self.calc = calc
 
     def __enter__(self):
         self.cache = sqlitedict.SqliteDict("katago.sqlite", autocommit=True)
         command = [KATAGO, "analysis", "-config", CONFIG, "-quit-without-waiting"]
-        print("Opening katago... ", file=sys.stderr, end="")
-        self.proc = subprocess.Popen(command,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
-        print("open", file=sys.stderr)
-        ver_info = self.query_json({"id":self.random_id(), "action":"query_version"})
-        print(f"katago program version {ver_info["version"]}")
-        model_info = self.query_json({"id": self.random_id(), "action":"query_models"})
-        print(f"katago model version {model_info["models"][0]["name"]}")
-        self.start_time = time.time()
+        if self.calc:
+            print("Opening katago... ", file=sys.stderr, end="")
+            self.proc = subprocess.Popen(command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+            print("open", file=sys.stderr)
+            ver_info = self.query_json({"id":self.random_id(), "action":"query_version"})
+            print(f"katago program version {ver_info["version"]}")
+            model_info = self.query_json({"id": self.random_id(), "action":"query_models"})
+            print(f"katago model version {model_info["models"][0]["name"]}")
+            self.start_time = time.time()
         self.calls = 0
 
     def random_id(self):
@@ -116,10 +117,11 @@ class Katago(metaclass=Singleton):
 
     def __exit__(self, type, value, tb):
         self.cache.close()
-        print("Closing katago... ", file=sys.stderr, end="")
-        self.proc.terminate()
-        self.proc.wait()
-        print("closed", file=sys.stderr)
+        if self.calc:
+            print("Closing katago... ", file=sys.stderr, end="")
+            self.proc.terminate()
+            self.proc.wait()
+            print("closed", file=sys.stderr)
 
     @functools.cache
     def _query(self, s: str):
@@ -128,6 +130,7 @@ class Katago(metaclass=Singleton):
             stdout = self.cache[s]
             #print(f"[cache] recv: {ellipsize(stdout).rstrip()}", file=sys.stderr)
             return stdout
+        assert self.calc, "Katago was opened in non-calc mode. Don't do new calculations!"
             
         #print(f"[katago] send: {s}", file=sys.stderr)
         #stdout, stderr = self.proc.communicate(timeout=2)
