@@ -24,17 +24,14 @@ HANDICAPS = [
     (6, ()),
     (7, ()),
     (8, ()),
-    (9, ()),
     (10, ()),
     (11, ()),
     (12, ()),
-    (13, ()),
     (14, ()),
     (15, ()),
     (16, ()),
     (17, ()),
     (18, ()),
-    (19, ()),
 
     # Guess at point equivalents of handicaps and standard size komi
     (19, ()),
@@ -215,7 +212,8 @@ class Position(ComparableByData):
             intersections.remove((move.x, move.y))
         for empty in intersections:
             for color in "BW":
-                # TODO: Technically some board positions are ILLEGAL in go??!
+                # Technically some board positions are ILLEGAL in go??!
+                # but... none of the 2-stone positions, so put off that problem for now
                 yield self.with_added_move(Move(color, empty[0], empty[1]))
 
     def with_added_move(self, move):
@@ -241,7 +239,7 @@ class Position(ComparableByData):
             #"initialPlayer": "B",
             "boardXSize": self.size,
             "boardYSize": self.size,
-            #"maxVisits": 100,
+            #"maxVisits": 100, # Sensei's library has evaluations with 1,000,000 for komi estimation
         }
 
     def estimate_score(self):
@@ -272,7 +270,7 @@ class Position(ComparableByData):
         else:
             komi, winrate = upper, winrateHigh
 
-        return komi, neural, abs(winrate-0.5)
+        return komi, neural, winrate
 
     def _data(self):
         return (tuple(self.moves), self.size)
@@ -287,15 +285,14 @@ class Position(ComparableByData):
         return " ".join(str(move) for move in self.moves)
 
 HANDICAPS = [
-    (size, tuple(Move("B", x, y) for x,y in moves)) for size, moves in HANDICAPS
+    Position(tuple(Move("B", x, y) for x,y in moves), size) for size, moves in HANDICAPS
 ]
 if __name__ == "__main__":
     with open(OUTPUT, "w", encoding="utf8") as f, Katago() as _:
         fieldnames = ["size", "stones", "score_komi", "score_neural", "winrate_komi"]
         writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(fieldnames)
-        for size, moves in tqdm(HANDICAPS, desc="Handicap Positions"):
-            position = Position(moves, size)
+        for position in tqdm(HANDICAPS, desc="Handicap Positions"):
             komi, neural, winrate = position.estimate_score()
             writer.writerow([position.size, position.printable_moves(), komi, neural, winrate])
         f.flush()

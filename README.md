@@ -10,4 +10,6 @@ Software used:
     Model kata1-b28c512nbt-adam-s11165M-d5387M
     Japanese scoring
 
-`diagram.py` uses out.csv to draw some human-readable diagrams of the results.
+    500 max visits (default)
+
+`diagram.py` uses the database cache (equivalent to CSV) to draw some human-readable diagrams of the results.
