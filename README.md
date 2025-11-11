@@ -1,3 +1,5 @@
+I recommend reading the writeup [on my blog](https://blog.za3k.com/go-analysis/)
+
 Analysis:
 - Evaluate the score of every possible 0 stone, 1-stone, 2-stone, position using katago.
 - Two methods were used:
